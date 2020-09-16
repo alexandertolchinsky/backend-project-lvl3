@@ -8,15 +8,15 @@ const convertUrlToFileName = (url) => {
   return `${fileName}${fileExtension}`;
 };
 
-const pageLoader = (outputPath, url) => {
-  return new Promise((res) => {
+const pageLoader = (outputPath, url) => (
+  new Promise((res) => {
     const fileName = convertUrlToFileName(url);
     const filePath = resolve(outputPath, fileName);
     axios.get(url)
       .then((response) => {
         fs.writeFile(filePath, response.data, 'utf-8').then(() => res());
       });
-  });
-};
+  })
+);
 
 export default pageLoader;
