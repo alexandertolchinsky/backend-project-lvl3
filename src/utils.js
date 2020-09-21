@@ -71,5 +71,8 @@ const transformLinks = (htmlString, links, handler) => {
 };
 
 export {
-  convertUrlToName, getLocalLinks, getDownloadList, transformLinks,
+  convertUrlToName,
+  getLocalLinks,
+  getDownloadList,
+  transformLinks,
 };
