@@ -1,6 +1,6 @@
 import axios from 'axios';
 import path from 'path';
-import { writeFile, mkdir } from 'fs/promises';
+import { promises as fs } from 'fs';
 import {
   convertUrlToName, getLocalLinks, getDownloadList, transformLinks,
 } from './utils.js';
@@ -21,7 +21,7 @@ const pageLoader = (outputPath, urlString) => (
         };
         const localLinks = getLocalLinks(pageContent, urlString, listTags);
         if (localLinks.length === 0) {
-          writeFile(pagePath, pageContent)
+          fs.writeFile(pagePath, pageContent)
             .catch((error) => reject(error))
             .then(() => resolve());
           return;
@@ -38,8 +38,8 @@ const pageLoader = (outputPath, urlString) => (
           const url = new URL(value, urlString);
           return url.pathname === '/' ? '/' : `${filesDirName}/${convertUrlToName(url)}`;
         });
-        mkdir(filesDirPath).then(() => {
-          writeFile(pagePath, newPageContent).then(() => {
+        fs.mkdir(filesDirPath).then(() => {
+          fs.writeFile(pagePath, newPageContent).then(() => {
             Promise.all(downloadList).then(() => resolve());
           });
         });
