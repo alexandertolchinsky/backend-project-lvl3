@@ -54,8 +54,7 @@ const getDownloadList = (links, outputDirPath) => (
           url: urlLink.href,
           responseType: 'stream',
         }).then((response) => {
-          response.data.pipe(createWriteStream(filePath));
-          resolve();
+          response.data.pipe(createWriteStream(filePath).on('finish', () => resolve()));
         });
       })
     ))
@@ -71,8 +70,5 @@ const transformLinks = (htmlString, links, handler) => {
 };
 
 export {
-  convertUrlToName,
-  getLocalLinks,
-  getDownloadList,
-  transformLinks,
+  convertUrlToName, getLocalLinks, getDownloadList, transformLinks,
 };
