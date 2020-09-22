@@ -8,6 +8,9 @@ program.description('Downloading the address from the network');
 program.option('--output [path]', 'path to output directory', process.cwd());
 program.arguments('<url>');
 program.action((url) => {
-  pageLoader(program.output, url);
+  pageLoader(program.output, url).catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 });
 program.parse(process.argv);

@@ -2,8 +2,7 @@ import axios from 'axios';
 import path from 'path';
 import { promises as fs } from 'fs';
 import debug from 'debug';
-// eslint-disable-next-line no-unused-vars
-import axiosDebugLog from 'axios-debug-log';
+import 'axios-debug-log';
 import {
   convertUrlToName, getLocalLinks, getDownloadList, transformLinks,
 } from './utils.js';
@@ -14,7 +13,6 @@ const pageLoader = (outputPath, urlString) => {
   log('launched');
   return new Promise((resolve, reject) => {
     axios(urlString)
-      .catch((error) => reject(error))
       .then((response) => {
         const pageUrl = new URL(urlString);
         const pageName = convertUrlToName(pageUrl, '.html');
@@ -32,7 +30,7 @@ const pageLoader = (outputPath, urlString) => {
         log('localLinks is "%O"', localLinks);
         if (localLinks.length === 0) {
           fs.writeFile(pagePath, pageContent)
-            .catch((error) => reject(error))
+            .catch(reject)
             .then(() => {
               log('page content save successfully');
               log('finished work');
@@ -65,10 +63,10 @@ const pageLoader = (outputPath, urlString) => {
                     log('files save successfully');
                     log('finished work');
                     resolve();
-                  });
-              });
-          });
-      });
+                  }).catch(reject);
+              }).catch(reject);
+          }).catch(reject);
+      }).catch(reject);
   });
 };
 

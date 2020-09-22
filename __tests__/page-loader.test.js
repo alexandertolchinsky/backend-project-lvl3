@@ -62,3 +62,13 @@ test('pageLoader downloads https://example.com/courses with local links', async 
   const imageBuffer = await fs.readFile(imagePath);
   expect(imageBuffer.compare(correctImageBuffer)).toBe(0);
 });
+
+test('pageLoader trying to download a non-existent page', async () => {
+  nock('https://example.com').get('/404').reply(404, '');
+  await expect(pageLoader(tmpDir, 'https://example.com/404')).rejects.toThrow('Request failed with status code 404');
+});
+
+test('trying to upload a page to a non-existent directory', async () => {
+  nock('https://example.com').get('/').reply(200, '');
+  await expect(pageLoader(`${tmpDir}/non-existent-directory`, 'https://example.com/')).rejects.toThrow('no such file or directory');
+});

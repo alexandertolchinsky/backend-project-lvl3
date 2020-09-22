@@ -3,8 +3,7 @@ import path from 'path';
 import axios from 'axios';
 import { createWriteStream } from 'fs';
 import debug from 'debug';
-// eslint-disable-next-line no-unused-vars
-import axiosDebugLog from 'axios-debug-log';
+import 'axios-debug-log';
 
 const log = debug('page-loader:utils');
 
@@ -73,7 +72,7 @@ const getDownloadList = (links, outputDirPath) => {
     .filter((linkUrl) => linkUrl.pathname !== '/')
     .map((urlLink) => {
       log('urlLink is "%O"', urlLink);
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const fileName = convertUrlToName(urlLink);
         const filePath = path.resolve(outputDirPath, fileName);
         axios({
@@ -84,7 +83,7 @@ const getDownloadList = (links, outputDirPath) => {
           .then((response) => {
             response.data.pipe(createWriteStream(filePath)
               .on('finish', () => resolve()));
-          });
+          }).catch(reject);
       });
     });
   log('finished "getLocalLinks');
