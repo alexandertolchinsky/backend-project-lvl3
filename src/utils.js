@@ -4,6 +4,7 @@ import axios from 'axios';
 import { createWriteStream } from 'fs';
 import debug from 'debug';
 import 'axios-debug-log';
+import Listr from 'listr';
 
 const log = debug('page-loader:utils');
 
@@ -75,7 +76,7 @@ const getDownloadList = (links, outputDirPath) => {
       return new Promise((resolve, reject) => {
         const fileName = convertUrlToName(urlLink);
         const filePath = path.resolve(outputDirPath, fileName);
-        axios({
+        const promise = axios({
           method: 'get',
           url: urlLink.href,
           responseType: 'stream',
@@ -84,6 +85,13 @@ const getDownloadList = (links, outputDirPath) => {
             response.data.pipe(createWriteStream(filePath)
               .on('finish', () => resolve()));
           }).catch(reject);
+        const tasks = new Listr([
+          {
+            title: `Downloading ${urlLink.href}`,
+            task: () => promise,
+          },
+        ]);
+        tasks.run();
       });
     });
   log('finished "getLocalLinks');

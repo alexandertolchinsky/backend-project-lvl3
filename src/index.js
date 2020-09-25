@@ -3,6 +3,7 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import debug from 'debug';
 import 'axios-debug-log';
+import Listr from 'listr';
 import {
   convertUrlToName, getLocalLinks, getDownloadList, transformLinks,
 } from './utils.js';
@@ -12,7 +13,7 @@ const log = debug('page-loader:index');
 const pageLoader = (outputPath, urlString) => {
   log('launched');
   return new Promise((resolve, reject) => {
-    axios(urlString)
+    const promise = axios(urlString)
       .then((response) => {
         const pageUrl = new URL(urlString);
         const pageName = convertUrlToName(pageUrl, '.html');
@@ -67,6 +68,13 @@ const pageLoader = (outputPath, urlString) => {
               }).catch(reject);
           }).catch(reject);
       }).catch(reject);
+    const tasks = new Listr([
+      {
+        title: `Downloading ${urlString}`,
+        task: () => promise,
+      },
+    ]);
+    tasks.run();
   });
 };
 
