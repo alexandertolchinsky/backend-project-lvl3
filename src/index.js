@@ -10,7 +10,7 @@ import {
 
 const log = debug('page-loader:index');
 
-const pageLoader = (outputPath, urlString) => {
+const loadPage = (outputPath, urlString) => {
   log('launched');
   return new Promise((resolve, reject) => {
     const promise = axios(urlString)
@@ -78,4 +78,4 @@ const pageLoader = (outputPath, urlString) => {
   });
 };
 
-export default pageLoader;
+export default loadPage;

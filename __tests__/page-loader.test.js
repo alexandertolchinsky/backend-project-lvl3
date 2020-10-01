@@ -6,7 +6,7 @@ import { promises as fs } from 'fs';
 import { dirname, join } from 'path';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
-import pageLoader from '../src/index.js';
+import loadPage from '../src/index.js';
 
 nock.disableNetConnect();
 
@@ -23,7 +23,7 @@ beforeEach(async () => {
 test('pageLoader downloads https://example.com without local links', async () => {
   const correctAnswer = await fs.readFile(getFixturePath('page-without-links.html'), 'utf-8');
   nock('https://example.com').get('/').reply(200, correctAnswer);
-  await pageLoader(tmpDir, 'https://example.com');
+  await loadPage(tmpDir, 'https://example.com');
   const downloadedPagePath = `${tmpDir}/example-com.html`;
   const downloadedPageContent = await fs.readFile(downloadedPagePath, 'utf-8');
   expect(downloadedPageContent).toBe(correctAnswer);
@@ -32,7 +32,7 @@ test('pageLoader downloads https://example.com without local links', async () =>
 test('pageLoader downloads https://example.com/ without local links', async () => {
   const correctAnswer = await fs.readFile(getFixturePath('page-without-links.html'), 'utf-8');
   nock('https://example.com').get('/').reply(200, correctAnswer);
-  await pageLoader(tmpDir, 'https://example.com/');
+  await loadPage(tmpDir, 'https://example.com/');
   const downloadedPagePath = `${tmpDir}/example-com.html`;
   const downloadedPageContent = await fs.readFile(downloadedPagePath, 'utf-8');
   expect(downloadedPageContent).toBe(correctAnswer);
@@ -48,7 +48,7 @@ test('pageLoader downloads https://example.com/courses with local links', async 
   nock('https://example.com').get('/scripts/script.js').reply(200, correctScriptContent);
   nock('https://example.com').get('/style.css').reply(200, correctStyleContent);
   nock('https://example.com').get('/image.png').reply(200, correctImageBuffer);
-  await pageLoader(tmpDir, 'https://example.com/courses');
+  await loadPage(tmpDir, 'https://example.com/courses');
   const downloadedPagePath = `${tmpDir}/example-com-courses.html`;
   const downloadedPageContent = await fs.readFile(downloadedPagePath, 'utf-8');
   expect(downloadedPageContent).toBe(pageWithLocalLinksContent);
@@ -65,10 +65,10 @@ test('pageLoader downloads https://example.com/courses with local links', async 
 
 test('pageLoader trying to download a non-existent page', async () => {
   nock('https://example.com').get('/404').reply(404, '');
-  await expect(pageLoader(tmpDir, 'https://example.com/404')).rejects.toThrow('Request failed with status code 404');
+  await expect(loadPage(tmpDir, 'https://example.com/404')).rejects.toThrow('Request failed with status code 404');
 });
 
 test('pageLoader trying to download to a non-existent directory', async () => {
   nock('https://example.com').get('/').reply(200, '');
-  await expect(pageLoader(`${tmpDir}/non-existent-directory`, 'https://example.com/')).rejects.toThrow('no such file or directory');
+  await expect(loadPage(`${tmpDir}/non-existent-directory`, 'https://example.com/')).rejects.toThrow('no such file or directory');
 });
