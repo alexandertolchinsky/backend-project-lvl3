@@ -16,9 +16,9 @@ const loadPage = (outputPath, urlString) => {
     const promise = axios(urlString)
       .then((response) => {
         const pageUrl = new URL(urlString);
-        const pageName = convertUrlToName(pageUrl, '.html');
-        log('pageName is "%s"', pageName);
-        const pagePath = path.resolve(outputPath, pageName);
+        const fileName = convertUrlToName(pageUrl, '.html');
+        log('fileName is "%s"', fileName);
+        const pagePath = path.resolve(outputPath, fileName);
         log('pagePath is "%s"', pagePath);
         const pageContent = response.data;
         log('pageContent is "%s"', pageContent);
@@ -35,7 +35,7 @@ const loadPage = (outputPath, urlString) => {
             .then(() => {
               log('page content save successfully');
               log('finished work');
-              resolve();
+              resolve(fileName);
             });
           return;
         }
@@ -63,7 +63,7 @@ const loadPage = (outputPath, urlString) => {
                   .then(() => {
                     log('files save successfully');
                     log('finished work');
-                    resolve();
+                    resolve(fileName);
                   }).catch(reject);
               }).catch(reject);
           }).catch(reject);

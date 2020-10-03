@@ -9,8 +9,8 @@ program.option('--output [path]', 'path to output directory', process.cwd());
 program.arguments('<url>');
 program.action((url) => {
   loadPage(program.output, url)
-    .then(() => {
-      console.log('Page successfully downloaded!');
+    .then((fileName) => {
+      console.log(`Page was downloaded as '${fileName}'`);
     })
     .catch((error) => {
       console.error(error.message);
