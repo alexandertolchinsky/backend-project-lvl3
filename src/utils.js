@@ -37,7 +37,7 @@ const isLocalLink = (link, baseUrlString) => {
   return linkUrl.hostname === baseUrl.hostname;
 };
 
-const getPageContentAndDownloadLinks = (html, url, filesDirPath) => {
+const getPageContentAndDownloadLinks = (html, url, filesDirName, filesDirPath) => {
   const downloadLinks = [];
   const $ = cheerio.load(html);
   const tagToAttribute = {
@@ -56,7 +56,7 @@ const getPageContentAndDownloadLinks = (html, url, filesDirPath) => {
         const fileName = convertUrlToName(linkUrl);
         const filePath = path.resolve(filesDirPath, fileName);
         downloadLinks.push({ link: linkUrl.href, filePath });
-        $(el).attr(attribute, `${filePath}`);
+        $(el).attr(attribute, `${filesDirName}/${fileName}`);
       }
     });
   }

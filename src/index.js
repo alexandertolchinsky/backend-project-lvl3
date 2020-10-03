@@ -17,7 +17,7 @@ const loadPage = (outputPath, url) => (
       const {
         pageContent,
         downloadLinks,
-      } = getPageContentAndDownloadLinks(response.data, url, filesDirPath);
+      } = getPageContentAndDownloadLinks(response.data, url, filesDirName, filesDirPath);
       if (downloadLinks.length === 0) {
         return fs.writeFile(pagePath, pageContent).then(() => pageName);
       }
