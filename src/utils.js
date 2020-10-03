@@ -1,10 +1,7 @@
 import cheerio from 'cheerio';
 import path from 'path';
-import axios from 'axios';
-import { createWriteStream } from 'fs';
 import debug from 'debug';
-import 'axios-debug-log';
-import Listr from 'listr';
+import prettier from 'prettier';
 
 const log = debug('page-loader:utils');
 
@@ -32,85 +29,41 @@ const convertUrlToName = (url, end = '') => {
 };
 
 const isLocalLink = (link, baseUrlString) => {
-  log('launched "isLocalLink');
+  if (!link) {
+    return false;
+  }
   const linkUrl = new URL(link, baseUrlString);
   const baseUrl = new URL(baseUrlString);
-  log('linkUrl is "%O"', linkUrl);
-  log('baseUrl is "%O"', baseUrl);
-  const result = linkUrl.hostname === baseUrl.hostname;
-  log('result is "%s', result);
-  log('finished "isLocalLink');
-  return result;
+  return linkUrl.hostname === baseUrl.hostname;
 };
 
-const getLocalLinks = (htmlString, urlString, listTags) => {
-  log('launched "getLocalLinks');
-  const $ = cheerio.load(htmlString);
-  const tags = Object.keys(listTags);
-  const localLinks = tags
-    .reduce((acc, tag) => {
-      log('tag is "%s', tag);
-      const attribute = listTags[tag];
-      log('attribute is "%s', attribute);
-      const links = [];
-      $(tag).each((i, el) => {
-        const attributeValue = $(el).attr(attribute);
-        log('attributeValue is "%s', attributeValue);
-        links.push({ tag, attribute, attributeValue });
-      });
-      return [...acc, ...links];
-    }, [])
-    .filter((link) => link.attributeValue)
-    .filter((link) => isLocalLink(link.attributeValue, urlString));
-  log('finished "getLocalLinks');
-  return localLinks;
-};
-
-const getDownloadList = (links, outputDirPath) => {
-  log('launched "getDownloadList');
-  const result = links
-    .map((link) => new URL(link.attributeValue))
-    .filter((linkUrl) => linkUrl.pathname !== '/')
-    .map((urlLink) => {
-      log('urlLink is "%O"', urlLink);
-      return new Promise((resolve, reject) => {
-        const fileName = convertUrlToName(urlLink);
-        const filePath = path.resolve(outputDirPath, fileName);
-        const promise = axios({
-          method: 'get',
-          url: urlLink.href,
-          responseType: 'stream',
-        })
-          .then((response) => {
-            response.data.pipe(createWriteStream(filePath)
-              .on('finish', () => resolve()));
-          }).catch(reject);
-        const tasks = new Listr([
-          {
-            title: `Downloading ${urlLink.href}`,
-            task: () => promise,
-          },
-        ]);
-        tasks.run();
-      });
-    });
-  log('finished "getLocalLinks');
-  return result;
-};
-
-const transformLinks = (htmlString, links, handler) => {
-  log('launched "transformLinks');
-  let result = htmlString;
+const getPageContentAndDownloadLinks = (html, url, filesDirPath) => {
+  const downloadLinks = [];
+  const $ = cheerio.load(html);
+  const tagToAttribute = {
+    link: 'href',
+    script: 'src',
+    img: 'src',
+  };
+  const tags = Object.keys(tagToAttribute);
   // eslint-disable-next-line no-restricted-syntax
-  for (const { attribute, attributeValue } of links) {
-    result = result.replace(`${attribute}="${attributeValue}"`, `${attribute}="${handler(attributeValue)}"`);
-    log('atribute is "%s", attributeValue is "%s"', attribute, attributeValue);
-    log('result is "%s"', result);
+  for (const tag of tags) {
+    const attribute = tagToAttribute[tag];
+    $(tag).each((i, el) => {
+      const link = $(el).attr(attribute);
+      const linkUrl = new URL(link, url);
+      if (isLocalLink(link, url) && linkUrl.pathname !== '/') {
+        const fileName = convertUrlToName(linkUrl);
+        const filePath = path.resolve(filesDirPath, fileName);
+        downloadLinks.push({ link: linkUrl.href, filePath });
+        $(el).attr(attribute, `${filePath}`);
+      }
+    });
   }
-  log('finished "getLocalLinks');
-  return result;
+  const pageContent = prettier.format($.html(), { parser: 'html' });
+  return { pageContent, downloadLinks };
 };
 
 export {
-  convertUrlToName, getLocalLinks, getDownloadList, transformLinks,
+  convertUrlToName, getPageContentAndDownloadLinks,
 };

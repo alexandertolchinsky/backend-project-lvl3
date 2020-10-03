@@ -1,81 +1,49 @@
 import axios from 'axios';
 import path from 'path';
-import { promises as fs } from 'fs';
-import debug from 'debug';
+import { promises as fs, createWriteStream } from 'fs';
 import 'axios-debug-log';
-import Listr from 'listr';
 import {
-  convertUrlToName, getLocalLinks, getDownloadList, transformLinks,
+  convertUrlToName, getPageContentAndDownloadLinks,
 } from './utils.js';
 
-const log = debug('page-loader:index');
-
-const loadPage = (outputPath, urlString) => {
-  log('launched');
-  return new Promise((resolve, reject) => {
-    const promise = axios(urlString)
-      .then((response) => {
-        const pageUrl = new URL(urlString);
-        const fileName = convertUrlToName(pageUrl, '.html');
-        log('fileName is "%s"', fileName);
-        const pagePath = path.resolve(outputPath, fileName);
-        log('pagePath is "%s"', pagePath);
-        const pageContent = response.data;
-        log('pageContent is "%s"', pageContent);
-        const listTags = {
-          link: 'href',
-          script: 'src',
-          img: 'src',
-        };
-        const localLinks = getLocalLinks(pageContent, urlString, listTags);
-        log('localLinks is "%O"', localLinks);
-        if (localLinks.length === 0) {
-          fs.writeFile(pagePath, pageContent)
-            .catch(reject)
+const loadPage = (outputPath, url) => (
+  axios(url)
+    .then((response) => {
+      const pageUrl = new URL(url);
+      const pageName = convertUrlToName(pageUrl, '.html');
+      const pagePath = path.resolve(outputPath, pageName);
+      const filesDirName = convertUrlToName(pageUrl, '_files');
+      const filesDirPath = path.resolve(outputPath, filesDirName);
+      const {
+        pageContent,
+        downloadLinks,
+      } = getPageContentAndDownloadLinks(response.data, url, filesDirPath);
+      if (downloadLinks.length === 0) {
+        return fs.writeFile(pagePath, pageContent).then(() => pageName);
+      }
+      return fs.writeFile(pagePath, pageContent)
+        .then(() => (
+          fs.mkdir(filesDirPath)
             .then(() => {
-              log('page content save successfully');
-              log('finished work');
-              resolve(fileName);
-            });
-          return;
-        }
-        const filesDirName = convertUrlToName(pageUrl, '_files');
-        log('filesDirName is "%s"', filesDirName);
-        const filesDirPath = path.resolve(outputPath, filesDirName);
-        log('filesDirPath is "%s"', filesDirPath);
-        const localLinksWithHostname = localLinks.map((link) => {
-          const attributeValueUrl = new URL(link.attributeValue, urlString);
-          const attributeValue = attributeValueUrl.href;
-          return { ...link, attributeValue };
-        });
-        const downloadList = getDownloadList(localLinksWithHostname, filesDirPath);
-        const newPageContent = transformLinks(pageContent, localLinks, (value) => {
-          const url = new URL(value, urlString);
-          return url.pathname === '/' ? '/' : `${filesDirName}/${convertUrlToName(url)}`;
-        });
-        fs.mkdir(filesDirPath)
-          .then(() => {
-            log('files directory created successfully');
-            fs.writeFile(pagePath, newPageContent)
-              .then(() => {
-                log('page content save successfully');
-                Promise.all(downloadList)
-                  .then(() => {
-                    log('files save successfully');
-                    log('finished work');
-                    resolve(fileName);
-                  }).catch(reject);
-              }).catch(reject);
-          }).catch(reject);
-      }).catch(reject);
-    const tasks = new Listr([
-      {
-        title: `Downloading ${urlString}`,
-        task: () => promise,
-      },
-    ]);
-    tasks.run();
-  });
-};
+              const promises = downloadLinks
+                .map(({ link, filePath }) => (
+                  axios({
+                    method: 'get',
+                    url: link,
+                    responseType: 'stream',
+                  }).then(({ data }) => {
+                    const stream = data.pipe(createWriteStream(filePath));
+                    return new Promise((resolve, reject) => {
+                      stream.on('finish', () => resolve());
+                      stream.on('error', () => reject);
+                    });
+                  })
+                ));
+              return Promise.all(promises);
+            })
+        ))
+        .then(() => pageName);
+    })
+);
 
 export default loadPage;
