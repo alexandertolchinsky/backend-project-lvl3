@@ -34,6 +34,8 @@ const isLocalLink = (link, baseUrlString) => {
   }
   const linkUrl = new URL(link, baseUrlString);
   const baseUrl = new URL(baseUrlString);
+  log('linkUrl is %O', linkUrl);
+  log('baseUrl is %O', baseUrl);
   return linkUrl.hostname === baseUrl.hostname;
 };
 
@@ -51,6 +53,7 @@ const getPageContentAndDownloadLinks = (html, url, filesDirName, filesDirPath) =
     const attribute = tagToAttribute[tag];
     $(tag).each((i, el) => {
       const link = $(el).attr(attribute);
+      log('link is %s', link);
       const linkUrl = new URL(link, url);
       if (isLocalLink(link, url) && linkUrl.pathname !== '/') {
         const fileName = convertUrlToName(linkUrl);
